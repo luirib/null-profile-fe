@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Card, BrandHeader, Modal } from '../components';
+import { Button, Card, BrandHeader } from '../components';
 import {
   authenticateWithPasskey,
   registerPasskey,
   isWebAuthnAvailable,
   getWebAuthnErrorMessage,
+  generateSuggestedPasskeyName,
 } from '../lib/webauthn';
 import { setAuthenticated } from '../lib/api';
 import type { RelyingPartyBranding, OidcTransactionContext } from '../types';
 
+type PageState = 'idle' | 'register' | 'authenticating' | 'registering';
+
 export const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [state, setState] = useState<PageState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [branding] = useState<RelyingPartyBranding | undefined>(undefined);
   const [txnContext, setTxnContext] = useState<OidcTransactionContext>({});
-  const [showNameModal, setShowNameModal] = useState(false);
-  const [displayName, setDisplayName] = useState('');
+  const [passkeyName, setPasskeyName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Extract transaction context from query params
@@ -26,18 +28,24 @@ export const LoginPage: React.FC = () => {
     setTxnContext({ txn: txn || undefined });
   }, [searchParams]);
 
+  // Auto-focus input when entering register mode
+  useEffect(() => {
+    if ((state === 'register' || state === 'registering') && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [state]);
+
   // Check WebAuthn availability
   if (!isWebAuthnAvailable()) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-mono">
         <Card className="max-w-md w-full">
           <BrandHeader branding={branding} />
           <div className="text-center">
-            <div className="text-red-600 text-5xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold mb-2">WebAuthn Not Supported</h2>
-            <p className="text-gray-600">
-              Your browser does not support WebAuthn/Passkeys. Please use a modern
-              browser like Chrome, Firefox, Safari, or Edge.
+            <div className="text-red-600 text-5xl mb-4">⚠</div>
+            <h2 className="text-xl font-mono font-semibold mb-3 text-gray-900">WebAuthn Unavailable</h2>
+            <p className="text-gray-600 font-mono text-sm leading-relaxed">
+              Your browser does not support WebAuthn. Please use Chrome, Firefox, Safari, or Edge.
             </p>
           </div>
         </Card>
@@ -47,178 +55,184 @@ export const LoginPage: React.FC = () => {
 
   const handleAuthenticate = async () => {
     setError(null);
-    setIsAuthenticating(true);
+    setState('authenticating');
 
     try {
       const result = await authenticateWithPasskey(txnContext.txn);
 
       if (result.success) {
-        // Mark as authenticated
         setAuthenticated(true);
 
-        // If backend provides a redirect URL (e.g., back to RP), follow it
         if (result.redirectUrl) {
           window.location.href = result.redirectUrl;
           return;
         }
 
-        // Otherwise, navigate to dashboard
         window.location.href = '/dashboard';
       } else {
         setError('Authentication failed. Please try again.');
+        setState('idle');
       }
     } catch (err) {
       console.error('Authentication error:', err);
       setError(getWebAuthnErrorMessage(err));
-    } finally {
-      setIsAuthenticating(false);
+      setState('idle');
     }
   };
 
-  const handleRegister = async () => {
-    // Open modal to get display name
-    setShowNameModal(true);
+  const handleShowRegisterMode = () => {
+    setError(null);
+    setPasskeyName(generateSuggestedPasskeyName());
+    setState('register');
   };
 
-  const handleNameSubmit = async (e: React.FormEvent) => {
+  const handleCancelRegister = () => {
+    setError(null);
+    setPasskeyName('');
+    setState('idle');
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedName = passkeyName.trim();
     
-    if (!displayName.trim()) {
+    // Validate passkey name
+    if (trimmedName.length < 2) {
+      setError('Passkey name must be at least 2 characters.');
+      return;
+    }
+    
+    if (trimmedName.length > 40) {
+      setError('Passkey name must be less than 40 characters.');
       return;
     }
 
-    setShowNameModal(false);
     setError(null);
-    setIsRegistering(true);
+    setState('registering');
 
     try {
-      const result = await registerPasskey(txnContext.txn, displayName.trim());
+      const result = await registerPasskey(txnContext.txn, trimmedName);
 
       if (result.success) {
-        // Mark as authenticated
         setAuthenticated(true);
 
-        // If backend provides a redirect URL (e.g., back to RP), follow it
         if (result.redirectUrl) {
           window.location.href = result.redirectUrl;
           return;
         }
 
-        // Otherwise, navigate to dashboard
         window.location.href = '/dashboard';
       } else {
         setError('Registration failed. Please try again.');
+        setState('register');
       }
     } catch (err) {
       console.error('Registration error:', err);
       setError(getWebAuthnErrorMessage(err));
-    } finally {
-      setIsRegistering(false);
-      setDisplayName('');
+      setState('register');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-mono">
       <Card className="max-w-md w-full">
         <BrandHeader branding={branding} />
 
-        <div className="text-center mb-6">
-          <p className="text-gray-600">
-            Sign in with your passkey. No passwords required.
+        <div className="text-center mb-8">
+          <p className="text-gray-600 font-mono text-sm">
+            Passwordless authentication via WebAuthn
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-lg">
+            <p className="text-red-600 text-sm font-mono">{error}</p>
           </div>
         )}
 
         {txnContext.txn && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-sm">
-              <strong>OIDC Transaction:</strong> Continuing authorization flow...
+          <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <p className="text-slate-700 text-sm font-mono">
+              <strong className="font-semibold">OIDC:</strong> Authorization flow active
             </p>
           </div>
         )}
 
-        <div className="space-y-4">
-          <Button
-            variant="primary"
-            className="w-full"
-            onClick={handleAuthenticate}
-            isLoading={isAuthenticating}
-            disabled={isRegistering}
-          >
-            🔑 Continue with Passkey
-          </Button>
+        {state === 'register' || state === 'registering' ? (
+          <form onSubmit={handleRegisterSubmit} className="space-y-5">
+            <div>
+              <label
+                htmlFor="passkeyName"
+                className="block text-sm font-mono font-medium text-gray-700 mb-2"
+              >
+                Passkey identifier
+              </label>
+              <input
+                ref={inputRef}
+                type="text"
+                id="passkeyName"
+                className="w-full px-4 py-3 font-mono text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                placeholder="e.g., Work Laptop, iPhone"
+                value={passkeyName}
+                onChange={(e) => setPasskeyName(e.target.value)}
+                disabled={state === 'registering'}
+                maxLength={40}
+                required
+              />
+              <p className="mt-2 text-xs text-gray-500 font-mono">
+                Choose a memorable name for this device
+              </p>
+            </div>
 
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={handleRegister}
-            isLoading={isRegistering}
-            disabled={isAuthenticating}
-          >
-            ➕ Create Passkey
-          </Button>
-        </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={handleCancelRegister}
+                disabled={state === 'registering'}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                className="flex-1"
+                isLoading={state === 'registering'}
+              >
+                Register
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            <Button
+              variant="primary"
+              className="w-full"
+              onClick={handleAuthenticate}
+              isLoading={state === 'authenticating'}
+            >
+              Continue with Passkey
+            </Button>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>
-            This site uses WebAuthn/Passkeys for secure, passwordless authentication.
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={handleShowRegisterMode}
+              disabled={state === 'authenticating'}
+            >
+              Create New Passkey
+            </Button>
+          </div>
+        )}
+
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <p className="text-xs text-gray-400 font-mono">
+            Zero-knowledge authentication • No passwords stored
           </p>
         </div>
       </Card>
-
-      <Modal
-        isOpen={showNameModal}
-        onClose={() => {
-          setShowNameModal(false);
-          setDisplayName('');
-        }}
-        title="Create Passkey"
-      >
-        <form onSubmit={handleNameSubmit}>
-          <div className="mb-4">
-            <label
-              htmlFor="displayName"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Display Name
-            </label>
-            <input
-              type="text"
-              id="displayName"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              autoFocus
-              required
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              This name will be used to identify your passkey.
-            </p>
-          </div>
-          <div className="flex gap-3 justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setShowNameModal(false);
-                setDisplayName('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              Create Passkey
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 };

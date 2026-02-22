@@ -126,6 +126,33 @@ export async function verifyAuthentication(
 }
 
 /**
+ * Generate a suggested passkey name based on browser/platform
+ */
+export function generateSuggestedPasskeyName(): string {
+  const ua = navigator.userAgent;
+  let platform = 'Device';
+  let browser = '';
+
+  // Detect platform
+  if (ua.includes('Windows')) platform = 'Windows';
+  else if (ua.includes('Mac')) platform = 'Mac';
+  else if (ua.includes('Linux')) platform = 'Linux';
+  else if (ua.includes('iPhone') || ua.includes('iPad')) platform = 'iOS';
+  else if (ua.includes('Android')) platform = 'Android';
+
+  // Detect browser
+  if (ua.includes('Edg/')) browser = 'Edge';
+  else if (ua.includes('Chrome/')) browser = 'Chrome';
+  else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Safari';
+  else if (ua.includes('Firefox/')) browser = 'Firefox';
+
+  if (browser) {
+    return `${platform} ${browser}`;
+  }
+  return `${platform} device`;
+}
+
+/**
  * Register a new passkey (WebAuthn registration flow)
  */
 export async function registerPasskey(
@@ -140,14 +167,18 @@ export async function registerPasskey(
   // Get registration options from backend
   const options = await getRegistrationOptions(txn, displayName);
 
+  // IMPORTANT: Override user.name and user.displayName with the chosen label
+  // This ensures the OS/platform shows the user's chosen name, not the backend's technical name
+  const chosenLabel = displayName || options.user.displayName;
+
   // Convert base64url strings to ArrayBuffers
   const publicKeyOptions: PublicKeyCredentialCreationOptions = {
     challenge: base64UrlToArrayBuffer(options.challenge),
     rp: options.rp,
     user: {
       id: base64UrlToArrayBuffer(options.user.id),
-      name: options.user.name,
-      displayName: options.user.displayName,
+      name: chosenLabel,  // Override with chosen label so OS displays it
+      displayName: chosenLabel,  // Also set displayName
     },
     pubKeyCredParams: options.pubKeyCredParams.map((param) => ({
       type: param.type as PublicKeyCredentialType,

@@ -6,14 +6,17 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        mono: ['JetBrains Mono', 'monospace'],
+      },
       colors: {
         primary: {
-          DEFAULT: '#3b82f6',
-          dark: '#2563eb',
+          DEFAULT: '#1e293b',
+          dark: '#0f172a',
         },
         secondary: {
-          DEFAULT: '#64748b',
-          dark: '#475569',
+          DEFAULT: '#475569',
+          dark: '#334155',
         },
       },
     },

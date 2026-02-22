@@ -8,13 +8,13 @@ export interface BrandHeaderProps {
 export const BrandHeader: React.FC<BrandHeaderProps> = ({ branding }) => {
   // Default branding if none provided
   const defaultBranding: RelyingPartyBranding = {
-    name: 'null-profile',
+    name: 'nullProfile',
   };
 
   const brand = branding || defaultBranding;
 
   return (
-    <div className="text-center mb-8">
+    <div className="text-center mb-10">
       {brand.logoUrl && (
         <img
           src={brand.logoUrl}
@@ -23,7 +23,7 @@ export const BrandHeader: React.FC<BrandHeaderProps> = ({ branding }) => {
         />
       )}
       <h1
-        className="text-3xl font-bold mb-2"
+        className="text-3xl font-mono font-bold mb-2 text-gray-900 tracking-tight"
         style={brand.primaryColor ? { color: brand.primaryColor } : undefined}
       >
         {brand.name}
