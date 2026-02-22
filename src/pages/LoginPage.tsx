@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Card, BrandHeader } from '../components';
+import { Button, Card, BrandHeader, Modal } from '../components';
 import {
   authenticateWithPasskey,
   registerPasskey,
@@ -17,6 +17,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [branding] = useState<RelyingPartyBranding | undefined>(undefined);
   const [txnContext, setTxnContext] = useState<OidcTransactionContext>({});
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [displayName, setDisplayName] = useState('');
 
   useEffect(() => {
     // Extract transaction context from query params
@@ -74,11 +76,23 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleRegister = async () => {
+    // Open modal to get display name
+    setShowNameModal(true);
+  };
+
+  const handleNameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!displayName.trim()) {
+      return;
+    }
+
+    setShowNameModal(false);
     setError(null);
     setIsRegistering(true);
 
     try {
-      const result = await registerPasskey(txnContext.txn);
+      const result = await registerPasskey(txnContext.txn, displayName.trim());
 
       if (result.success) {
         // Mark as authenticated
@@ -100,6 +114,7 @@ export const LoginPage: React.FC = () => {
       setError(getWebAuthnErrorMessage(err));
     } finally {
       setIsRegistering(false);
+      setDisplayName('');
     }
   };
 
@@ -156,6 +171,54 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
       </Card>
+
+      <Modal
+        isOpen={showNameModal}
+        onClose={() => {
+          setShowNameModal(false);
+          setDisplayName('');
+        }}
+        title="Create Passkey"
+      >
+        <form onSubmit={handleNameSubmit}>
+          <div className="mb-4">
+            <label
+              htmlFor="displayName"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Display Name
+            </label>
+            <input
+              type="text"
+              id="displayName"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter your name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              autoFocus
+              required
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              This name will be used to identify your passkey.
+            </p>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowNameModal(false);
+                setDisplayName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              Create Passkey
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

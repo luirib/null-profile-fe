@@ -47,10 +47,12 @@ export interface AuthenticationOptions {
  * Get registration options from backend
  */
 export async function getRegistrationOptions(
-  txn?: string
+  txn?: string,
+  displayName?: string
 ): Promise<RegistrationOptions> {
   return apiPost<RegistrationOptions>('/webauthn/registration/options', {
     txn,
+    displayName,
   });
 }
 
@@ -127,7 +129,8 @@ export async function verifyAuthentication(
  * Register a new passkey (WebAuthn registration flow)
  */
 export async function registerPasskey(
-  txn?: string
+  txn?: string,
+  displayName?: string
 ): Promise<{ success: boolean; redirectUrl?: string }> {
   // Check WebAuthn support
   if (!window.PublicKeyCredential) {
@@ -135,7 +138,7 @@ export async function registerPasskey(
   }
 
   // Get registration options from backend
-  const options = await getRegistrationOptions(txn);
+  const options = await getRegistrationOptions(txn, displayName);
 
   // Convert base64url strings to ArrayBuffers
   const publicKeyOptions: PublicKeyCredentialCreationOptions = {
