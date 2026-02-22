@@ -14,11 +14,11 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'px-6 py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'px-6 py-3 rounded-lg font-mono font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variantStyles = {
-    primary: 'bg-primary text-white hover:bg-primary-dark focus:ring-primary',
-    secondary: 'bg-secondary text-white hover:bg-secondary-dark focus:ring-secondary',
+    primary: 'bg-gray-900 text-white hover:bg-gray-800 focus:ring-gray-700 shadow-sm hover:shadow-md',
+    secondary: 'bg-gray-600 text-white hover:bg-gray-500 focus:ring-gray-500 shadow-sm hover:shadow-md',
   };
 
   return (
