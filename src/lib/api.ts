@@ -2,7 +2,6 @@ import type {
   PasskeySummary,
   RelyingPartySummary,
   RelyingPartyDetail,
-  UserInfo,
   CreateRelyingPartyRequest,
   UpdateRelyingPartyRequest,
 } from '../types/api';
@@ -140,13 +139,6 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
 // ============================================================================
 
 /**
- * Get current user information
- */
-export async function getCurrentUser(): Promise<UserInfo> {
-  return apiGet<UserInfo>('/api/me');
-}
-
-/**
  * Logout current user
  */
 export async function logout(): Promise<void> {
@@ -162,17 +154,7 @@ export async function logout(): Promise<void> {
  * Check if user is authenticated
  */
 export async function checkAuthentication(): Promise<boolean> {
-  try {
-    await getCurrentUser();
-    return true;
-  } catch (error) {
-    const apiError = error as ApiError;
-    // If we get 404 (endpoint not implemented), check localStorage fallback
-    if (apiError.status === 404) {
-      return localStorage.getItem('authenticated') === 'true';
-    }
-    return false;
-  }
+  return localStorage.getItem('authenticated') === 'true';
 }
 
 /**
