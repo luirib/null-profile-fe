@@ -1,3 +1,12 @@
+import type {
+  PasskeySummary,
+  RelyingPartySummary,
+  RelyingPartyDetail,
+  UserInfo,
+  CreateRelyingPartyRequest,
+  UpdateRelyingPartyRequest,
+} from '../types/api';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export interface ApiError {
@@ -6,7 +15,15 @@ export interface ApiError {
 }
 
 /**
- * Base fetch wrapper with credentials
+ * Handle 401/403 responses globally
+ */
+function handleUnauthorized() {
+  localStorage.removeItem('authenticated');
+  window.location.href = '/login';
+}
+
+/**
+ * Base fetch wrapper with credentials and global error handling
  */
 async function apiFetch<T>(
   endpoint: string,
@@ -23,6 +40,15 @@ async function apiFetch<T>(
         ...options?.headers,
       },
     });
+
+    // Global 401/403 handling
+    if (response.status === 401 || response.status === 403) {
+      handleUnauthorized();
+      throw {
+        message: 'Unauthorized',
+        status: response.status,
+      } as ApiError;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -41,7 +67,11 @@ async function apiFetch<T>(
       throw error;
     }
 
-    // Handle empty responses
+    // Handle empty responses (204 No Content)
+    if (response.status === 204) {
+      return {} as T;
+    }
+
     const text = await response.text();
     return text ? JSON.parse(text) : ({} as T);
   } catch (error) {
@@ -78,18 +108,62 @@ export async function apiPost<T>(
 }
 
 /**
- * Check if user is authenticated (session exists)
- * This is a placeholder - adapt based on actual backend endpoint
+ * PUT request
+ */
+export async function apiPut<T>(
+  endpoint: string,
+  body?: unknown
+): Promise<T> {
+  return apiFetch<T>(endpoint, {
+    method: 'PUT',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+/**
+ * DELETE request
+ */
+export async function apiDelete<T>(endpoint: string): Promise<T> {
+  return apiFetch<T>(endpoint, { method: 'DELETE' });
+}
+
+// ============================================================================
+// Session Management
+// ============================================================================
+
+/**
+ * Get current user information
+ */
+export async function getCurrentUser(): Promise<UserInfo> {
+  return apiGet<UserInfo>('/api/me');
+}
+
+/**
+ * Logout current user
+ */
+export async function logout(): Promise<void> {
+  try {
+    await apiPost('/api/logout');
+  } finally {
+    localStorage.removeItem('authenticated');
+    window.location.href = '/login';
+  }
+}
+
+/**
+ * Check if user is authenticated
  */
 export async function checkAuthentication(): Promise<boolean> {
   try {
-    // Try to fetch session info from backend
-    // If backend doesn't have this endpoint yet, this will fail gracefully
-    await apiGet('/api/session');
+    await getCurrentUser();
     return true;
-  } catch {
-    // For now, fallback to checking localStorage
-    return localStorage.getItem('authenticated') === 'true';
+  } catch (error) {
+    const apiError = error as ApiError;
+    // If we get 404 (endpoint not implemented), check localStorage fallback
+    if (apiError.status === 404) {
+      return localStorage.getItem('authenticated') === 'true';
+    }
+    return false;
   }
 }
 
@@ -103,3 +177,93 @@ export function setAuthenticated(value: boolean): void {
     localStorage.removeItem('authenticated');
   }
 }
+
+// ============================================================================
+// Passkeys Management
+// ============================================================================
+
+/**
+ * Get all passkeys for current user
+ */
+export async function getPasskeys(): Promise<PasskeySummary[]> {
+  try {
+    return await apiGet<PasskeySummary[]>('/api/passkeys');
+  } catch (error) {
+    const apiError = error as ApiError;
+    if (apiError.status === 404) {
+      console.warn('Passkeys endpoint not implemented yet');
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get passkey registration options
+ */
+export async function getPasskeyRegistrationOptions(displayName: string): Promise<any> {
+  return apiPost('/api/passkeys/options', { displayName });
+}
+
+/**
+ * Verify passkey registration
+ */
+export async function verifyPasskeyRegistration(payload: any): Promise<void> {
+  return apiPost('/api/passkeys/verify', payload);
+}
+
+/**
+ * Delete a passkey
+ */
+export async function deletePasskey(id: string): Promise<void> {
+  return apiDelete(`/api/passkeys/${id}`);
+}
+
+// ============================================================================
+// Relying Parties Management
+// ============================================================================
+
+/**
+ * Get all relying parties
+ */
+export async function getRelyingParties(): Promise<RelyingPartySummary[]> {
+  try {
+    return await apiGet<RelyingPartySummary[]>('/api/relying-parties');
+  } catch (error) {
+    const apiError = error as ApiError;
+    if (apiError.status === 404) {
+      console.warn('Relying Parties endpoint not implemented yet');
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get relying party details
+ */
+export async function getRelyingParty(id: string): Promise<RelyingPartyDetail> {
+  return apiGet<RelyingPartyDetail>(`/api/relying-parties/${id}`);
+}
+
+/**
+ * Create a new relying party
+ */
+export async function createRelyingParty(data: CreateRelyingPartyRequest): Promise<RelyingPartyDetail> {
+  return apiPost<RelyingPartyDetail>('/api/relying-parties', data);
+}
+
+/**
+ * Update a relying party
+ */
+export async function updateRelyingParty(id: string, data: UpdateRelyingPartyRequest): Promise<RelyingPartyDetail> {
+  return apiPut<RelyingPartyDetail>(`/api/relying-parties/${id}`, data);
+}
+
+/**
+ * Delete a relying party
+ */
+export async function deleteRelyingParty(id: string): Promise<void> {
+  return apiDelete(`/api/relying-parties/${id}`);
+}
+
