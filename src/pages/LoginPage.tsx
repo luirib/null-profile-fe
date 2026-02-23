@@ -141,7 +141,7 @@ export const LoginPage: React.FC = () => {
 
         <div className="text-center mb-8">
           <p className="text-gray-600 font-mono text-sm">
-            Passwordless authentication via WebAuthn
+            Strong authentication, Zero profiling
           </p>
         </div>
 
@@ -229,7 +229,7 @@ export const LoginPage: React.FC = () => {
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
           <p className="text-xs text-gray-400 font-mono">
-            Zero-knowledge authentication • No passwords stored
+            No passwords • No email • Strong authentication • nullProfile
           </p>
         </div>
       </Card>

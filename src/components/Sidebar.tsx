@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Key, Shield } from 'lucide-react';
+import { Key, Shield, User } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -12,6 +12,10 @@ export const Sidebar: React.FC = () => {
 
   return (
     <div className="w-64 h-full shrink-0 bg-white border-r border-gray-200 p-4 space-y-2">
+      <NavLink to="/dashboard/profile" className={linkClass}>
+        <User size={18} />
+        Profile
+      </NavLink>
       <NavLink to="/dashboard/passkeys" className={linkClass}>
         <Key size={18} />
         Passkeys

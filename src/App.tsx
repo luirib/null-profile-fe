@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages';
-import { ProtectedRoute, DashboardLayout, PasskeysPage, RelyingPartiesPage } from './components';
+import { ProtectedRoute, DashboardLayout, ProfilePage, PasskeysPage, RelyingPartiesPage } from './components';
 
 function App() {
   return (
@@ -18,7 +18,8 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard/passkeys" replace />} />
+          <Route index element={<Navigate to="/dashboard/profile" replace />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="passkeys" element={<PasskeysPage />} />
           <Route path="relying-parties" element={<RelyingPartiesPage />} />
         </Route>

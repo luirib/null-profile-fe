@@ -254,6 +254,12 @@ export function isWebAuthnAvailable(): boolean {
  * Get user-friendly error message for WebAuthn errors
  */
 export function getWebAuthnErrorMessage(error: unknown): string {
+  // Handle API errors (from backend)
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    return error.message;
+  }
+  
+  // Handle browser WebAuthn errors
   if (error instanceof Error) {
     const errorName = error.name;
     

@@ -61,7 +61,8 @@ async function apiFetch<T>(
       } else {
         try {
           const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || errorJson.message || errorMessage;
+          // Prioritize errorDescription (user message) over error (error code)
+          errorMessage = errorJson.errorDescription || errorJson.message || errorJson.error || errorMessage;
         } catch {
           errorMessage = errorText || errorMessage;
         }
@@ -279,5 +280,13 @@ export async function updateRelyingParty(id: string, data: UpdateRelyingPartyReq
  */
 export async function deleteRelyingParty(id: string): Promise<void> {
   return apiDelete(`/api/relying-parties/${id}`);
+}
+
+/**
+ * Delete the current user's account
+ * This permanently removes all passkeys, relying parties, and user data
+ */
+export async function deleteAccount(): Promise<void> {
+  return apiDelete('/api/account');
 }
 
