@@ -61,6 +61,7 @@ export async function getRegistrationOptions(
  */
 export async function verifyRegistration(
   credential: Credential,
+  name: string,
   txn?: string
 ): Promise<{ success: boolean; redirectUrl?: string }> {
   const publicKeyCredential = credential as PublicKeyCredential;
@@ -74,6 +75,7 @@ export async function verifyRegistration(
       attestationObject: arrayBufferToBase64Url(response.attestationObject),
       clientDataJSON: arrayBufferToBase64Url(response.clientDataJSON),
     },
+    name,
     txn,
   };
 
@@ -198,8 +200,8 @@ export async function registerPasskey(
     throw new Error('Failed to create credential');
   }
 
-  // Verify with backend
-  return verifyRegistration(credential, txn);
+  // Verify with backend - pass the chosen label as the name
+  return verifyRegistration(credential, chosenLabel, txn);
 }
 
 /**
@@ -272,4 +274,65 @@ export function getWebAuthnErrorMessage(error: unknown): string {
   }
   
   return 'An unknown error occurred.';
+}
+
+/**
+ * Add a new passkey to an authenticated user
+ */
+export async function addPasskeyToUser(displayName: string): Promise<void> {
+  // Check WebAuthn support
+  if (!window.PublicKeyCredential) {
+    throw new Error('WebAuthn is not supported in this browser');
+  }
+
+  // Get registration options from backend
+  const { getPasskeyRegistrationOptions, verifyPasskeyRegistration } = await import('./api');
+  const options = await getPasskeyRegistrationOptions(displayName);
+
+  // Convert base64url strings to ArrayBuffers
+  const publicKeyOptions: PublicKeyCredentialCreationOptions = {
+    challenge: base64UrlToArrayBuffer(options.challenge),
+    rp: options.rp,
+    user: {
+      id: base64UrlToArrayBuffer(options.user.id),
+      name: displayName,
+      displayName: displayName,
+    },
+    pubKeyCredParams: options.pubKeyCredParams.map((param: any) => ({
+      type: param.type as PublicKeyCredentialType,
+      alg: param.alg,
+    })),
+    timeout: options.timeout,
+    authenticatorSelection: options.authenticatorSelection,
+    attestation: options.attestation,
+    excludeCredentials: options.excludeCredentials?.map((cred: any) => ({
+      type: cred.type as PublicKeyCredentialType,
+      id: base64UrlToArrayBuffer(cred.id),
+    })),
+  };
+
+  // Create credential
+  const credential = await navigator.credentials.create({
+    publicKey: publicKeyOptions,
+  });
+
+  if (!credential) {
+    throw new Error('Failed to create credential');
+  }
+
+  // Format response for backend
+  const publicKeyCredential = credential as PublicKeyCredential;
+  const response = publicKeyCredential.response as AuthenticatorAttestationResponse;
+
+  const registrationData = {
+    name: displayName,
+    id: publicKeyCredential.id,
+    response: {
+      attestationObject: arrayBufferToBase64Url(response.attestationObject),
+      clientDataJSON: arrayBufferToBase64Url(response.clientDataJSON),
+    },
+  };
+
+  // Verify with backend
+  await verifyPasskeyRegistration(registrationData);
 }

@@ -11,7 +11,7 @@ export const Sidebar: React.FC = () => {
     }`;
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 p-4 space-y-2">
+    <div className="w-64 h-full shrink-0 bg-white border-r border-gray-200 p-4 space-y-2">
       <NavLink to="/dashboard/passkeys" className={linkClass}>
         <Key size={18} />
         Passkeys

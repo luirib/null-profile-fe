@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
-import { getPasskeys, deletePasskey, getPasskeyRegistrationOptions, verifyPasskeyRegistration } from '../lib/api';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { getPasskeys, renamePasskey, deletePasskey } from '../lib/api';
+import { addPasskeyToUser, getWebAuthnErrorMessage } from '../lib/webauthn';
 import type { PasskeySummary } from '../types/api';
 import { Button } from './Button';
 import { useToast } from './ToastProvider';
@@ -14,6 +15,10 @@ export const PasskeysPage: React.FC = () => {
   const [newPasskeyName, setNewPasskeyName] = useState('');
   const [registering, setRegistering] = useState(false);
   const [formError, setFormError] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editError, setEditError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -43,35 +48,8 @@ export const PasskeysPage: React.FC = () => {
     setFormError('');
     setRegistering(true);
     try {
-      // Step 1: Get registration options
-      const options = await getPasskeyRegistrationOptions(newPasskeyName);
-
-      // Step 2: Create credential
-      const credential = await navigator.credentials.create({
-        publicKey: options,
-      }) as PublicKeyCredential;
-
-      // Step 3: Verify registration
-      await verifyPasskeyRegistration({
-        name: newPasskeyName,
-        credential: {
-          id: credential.id,
-          rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
-          response: {
-            clientDataJSON: btoa(
-              String.fromCharCode(
-                ...new Uint8Array((credential.response as AuthenticatorAttestationResponse).clientDataJSON)
-              )
-            ),
-            attestationObject: btoa(
-              String.fromCharCode(
-                ...new Uint8Array((credential.response as AuthenticatorAttestationResponse).attestationObject)
-              )
-            ),
-          },
-          type: credential.type,
-        },
-      });
+      // Use the helper function that handles all WebAuthn conversions
+      await addPasskeyToUser(newPasskeyName);
 
       // Success - reload passkeys and reset form
       await loadPasskeys();
@@ -80,9 +58,47 @@ export const PasskeysPage: React.FC = () => {
       toast.success('Passkey registered successfully!');
     } catch (error) {
       console.error('Passkey registration failed:', error);
-      toast.error('Failed to register passkey. Check console for details.');
+      const errorMessage = getWebAuthnErrorMessage(error);
+      toast.error(`Failed to register passkey: ${errorMessage}`);
     } finally {
       setRegistering(false);
+    }
+  };
+
+  const handleEditPasskey = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditingName(currentName);
+    setEditError('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingName('');
+    setEditError('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingName.trim()) {
+      setEditError('Please enter a passkey name');
+      toast.error('Please enter a passkey name');
+      return;
+    }
+
+    if (!editingId) return;
+
+    setSaving(true);
+    setEditError('');
+    try {
+      await renamePasskey(editingId, editingName.trim());
+      await loadPasskeys();
+      setEditingId(null);
+      setEditingName('');
+      toast.success('Passkey renamed successfully');
+    } catch (error) {
+      console.error('Failed to rename passkey:', error);
+      toast.error('Failed to rename passkey');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -98,9 +114,15 @@ export const PasskeysPage: React.FC = () => {
       await deletePasskey(deleteConfirmId);
       await loadPasskeys();
       toast.success('Passkey deleted successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete passkey:', error);
-      toast.error('Failed to delete passkey');
+      
+      // Check if this is the "last passkey" error
+      if (error?.status === 409 || error?.message?.includes('last passkey')) {
+        toast.error(error.message || 'Cannot delete your last passkey. You need at least one passkey to access your account.');
+      } else {
+        toast.error('Failed to delete passkey');
+      }
     } finally {
       setDeleting(false);
       setDeleteConfirmId(null);
@@ -196,7 +218,31 @@ export const PasskeysPage: React.FC = () => {
             ) : (
               passkeys.map((passkey) => (
                 <tr key={passkey.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{passkey.name}</td>
+                  <td className="px-6 py-4 font-medium text-gray-900">
+                    {editingId === passkey.id ? (
+                      <div>
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => {
+                            setEditingName(e.target.value);
+                            if (editError) setEditError('');
+                          }}
+                          className={`px-2 py-1 border rounded font-mono text-sm focus:outline-none focus:ring-2 ${
+                            editError
+                              ? 'border-red-500 focus:ring-red-500'
+                              : 'border-gray-300 focus:ring-gray-900'
+                          }`}
+                          disabled={saving}
+                        />
+                        {editError && (
+                          <p className="mt-1 text-xs text-red-600 font-mono">{editError}</p>
+                        )}
+                      </div>
+                    ) : (
+                      passkey.name
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-gray-600">
                     {new Date(passkey.createdAt).toLocaleString()}
                   </td>
@@ -204,13 +250,50 @@ export const PasskeysPage: React.FC = () => {
                     {passkey.id.substring(0, 16)}...
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDeletePasskey(passkey.id)}
-                      className="text-red-600 hover:text-red-800 transition-colors"
-                      title="Delete passkey"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {editingId === passkey.id ? (
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={handleSaveEdit}
+                          disabled={saving}
+                          className="px-3 py-1 bg-gray-900 text-white rounded hover:bg-gray-800 transition-colors text-xs font-mono disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          disabled={saving}
+                          className="px-3 py-1 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition-colors text-xs font-mono disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => handleEditPasskey(passkey.id, passkey.name)}
+                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                          title="Rename passkey"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePasskey(passkey.id)}
+                          disabled={passkeys.length === 1}
+                          className={`transition-colors ${
+                            passkeys.length === 1
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-red-600 hover:text-red-800'
+                          }`}
+                          title={
+                            passkeys.length === 1
+                              ? 'Cannot delete your last passkey'
+                              : 'Delete passkey'
+                          }
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))

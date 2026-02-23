@@ -53,11 +53,18 @@ async function apiFetch<T>(
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `HTTP ${response.status}`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.error || errorJson.message || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
+      
+      // Check for custom error message in header
+      const headerErrorMessage = response.headers.get('X-Error-Message');
+      if (headerErrorMessage) {
+        errorMessage = headerErrorMessage;
+      } else {
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
       }
       
       const error: ApiError = {
@@ -199,17 +206,24 @@ export async function getPasskeys(): Promise<PasskeySummary[]> {
 }
 
 /**
- * Get passkey registration options
+ * Get passkey registration options (returns raw backend response)
  */
 export async function getPasskeyRegistrationOptions(displayName: string): Promise<any> {
   return apiPost('/api/passkeys/options', { displayName });
 }
 
 /**
- * Verify passkey registration
+ * Verify passkey registration (raw backend call)
  */
 export async function verifyPasskeyRegistration(payload: any): Promise<void> {
   return apiPost('/api/passkeys/verify', payload);
+}
+
+/**
+ * Rename a passkey
+ */
+export async function renamePasskey(id: string, name: string): Promise<void> {
+  return apiPut(`/api/passkeys/${id}`, { name });
 }
 
 /**
