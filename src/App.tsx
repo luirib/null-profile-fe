@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage } from './pages';
+import { LoginPage, OidcLoginPage } from './pages';
 import { ProtectedRoute, DashboardLayout, ProfilePage, PasskeysPage, RelyingPartiesPage } from './components';
 
 function App() {
@@ -8,6 +8,7 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/oidc/login" element={<OidcLoginPage />} />
 
         {/* Protected routes */}
         <Route

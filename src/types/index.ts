@@ -4,10 +4,11 @@
 
 /**
  * Relying Party branding information
- * (Placeholder for future implementation - will be fetched from backend based on OIDC transaction)
+ * (Fetched from backend based on OIDC transaction)
  */
 export interface RelyingPartyBranding {
-  name: string;
+  rpName: string;
+  displayName: string;
   logoUrl?: string;
   primaryColor?: string;
   secondaryColor?: string;
