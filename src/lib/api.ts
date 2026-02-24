@@ -143,7 +143,7 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
  */
 export async function logout(): Promise<void> {
   try {
-    await apiPost('/api/logout');
+    await apiPost('/api/session/logout');
   } finally {
     localStorage.removeItem('authenticated');
     window.location.href = '/login';

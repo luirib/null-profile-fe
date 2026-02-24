@@ -26,6 +26,7 @@ export const RelyingPartiesPage: React.FC = () => {
     primaryColor: '#1f2937',
     secondaryColor: '#4b5563',
   });
+  const [editingRpId, setEditingRpId] = useState<string | null>(null);
   const [redirectUriInput, setRedirectUriInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<{ name?: string; redirectUris?: string; redirectUriInput?: string }>({});
@@ -60,6 +61,7 @@ export const RelyingPartiesPage: React.FC = () => {
         secondaryColor: rp.branding?.secondaryColor || '#4b5563',
       });
       setEditingId(id);
+      setEditingRpId(rp.rpId);
       setShowForm(true);
     } catch (error) {
       console.error('Failed to load relying party details:', error);
@@ -128,6 +130,7 @@ export const RelyingPartiesPage: React.FC = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingId(null);
+    setEditingRpId(null);
     setFormData({
       name: '',
       redirectUris: [],
@@ -199,6 +202,18 @@ export const RelyingPartiesPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
+            {editingId && editingRpId && (
+              <div>
+                <label className="block font-mono text-sm font-medium text-gray-700 mb-1">
+                  Client ID
+                </label>
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm bg-gray-50 text-gray-600">
+                  {editingRpId}
+                </div>
+                <p className="mt-1 text-xs text-gray-500 font-mono">Client ID cannot be changed</p>
+              </div>
+            )}
+
             <div>
               <label className="block font-mono text-sm font-medium text-gray-700 mb-1">
                 Name *
@@ -361,8 +376,8 @@ export const RelyingPartiesPage: React.FC = () => {
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr>
               <th className="text-left px-6 py-3 font-semibold text-gray-900">Name</th>
+              <th className="text-left px-6 py-3 font-semibold text-gray-900">Client ID</th>
               <th className="text-left px-6 py-3 font-semibold text-gray-900">Created</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-900">ID</th>
               <th className="text-right px-6 py-3 font-semibold text-gray-900">Actions</th>
             </tr>
           </thead>
@@ -378,10 +393,10 @@ export const RelyingPartiesPage: React.FC = () => {
                 <tr key={rp.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 font-medium text-gray-900">{rp.name}</td>
                   <td className="px-6 py-4 text-gray-600">
-                    {new Date(rp.createdAt).toLocaleString()}
+                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">{rp.rpId}</code>
                   </td>
-                  <td className="px-6 py-4 text-gray-500 text-xs">
-                    {rp.id.substring(0, 16)}...
+                  <td className="px-6 py-4 text-gray-600">
+                    {new Date(rp.createdAt).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex gap-2 justify-end">
