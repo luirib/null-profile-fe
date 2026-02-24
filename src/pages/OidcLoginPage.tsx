@@ -19,7 +19,7 @@ function getOidcSubtitle(): string {
 }
 
 function getOidcBannerText(rpName: string): string {
-  return `Use an existing passkey to continue, or create a new one for your account.`;
+  return `You're signing in to ${rpName}. Use an existing passkey to continue, or create a new one for your account.`;
 }
 
 function isValidHexColor(color: string): boolean {

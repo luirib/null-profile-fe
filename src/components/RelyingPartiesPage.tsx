@@ -9,6 +9,7 @@ import {
 } from '../lib/api';
 import type { RelyingPartySummary, CreateRelyingPartyRequest } from '../types/api';
 import { Button } from './Button';
+import { CollapsibleSection } from './CollapsibleSection';
 import { useToast } from './ToastProvider';
 import { ConfirmDialog } from './ConfirmDialog';
 
@@ -176,6 +177,9 @@ export const RelyingPartiesPage: React.FC = () => {
     return <div className="font-mono text-gray-600">Loading relying parties...</div>;
   }
 
+  // Get issuer base URL from environment variable
+  const issuerBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -185,6 +189,195 @@ export const RelyingPartiesPage: React.FC = () => {
           New Relying Party
         </Button>
       </div>
+
+      {/* Integration Guidelines Section */}
+      <CollapsibleSection title="Integration Guidelines" defaultOpen={false}>
+        <div className="space-y-6 font-mono text-sm">
+          <div>
+            <p className="text-gray-700 mb-4">
+              This quick start shows how to integrate <span className="font-semibold">nullProfile</span> as an OpenID Connect Provider using Authorization Code + PKCE.
+            </p>
+            <p className="text-gray-700">
+              If you're new to OIDC, you can test the full flow using{' '}
+              <a
+                href="https://oidcdebugger.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                oidcdebugger.com
+              </a>
+              .
+            </p>
+          </div>
+
+          {/* Step A - Create Relying Party */}
+          <div>
+            <h3 className="text-base font-bold text-gray-900 mb-3">Step A — Create a Relying Party</h3>
+            <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-2">
+              <li>Click the <span className="font-semibold">"+ New Relying Party"</span> button above</li>
+              <li>Fill in the form:
+                <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+                  <li><span className="font-semibold">Name:</span> Display name for your application</li>
+                  <li><span className="font-semibold">Redirect URIs:</span> One per line (e.g., <code className="bg-gray-100 px-1 rounded">https://oidcdebugger.com/debug</code>)</li>
+                  <li><span className="font-semibold">Optional customization:</span>
+                    <ul className="list-disc list-inside ml-6 mt-1">
+                      <li>Logo URL: Your app's logo (displayed during login)</li>
+                      <li>Primary Color: Main button color</li>
+                      <li>Secondary Color: Secondary UI elements</li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>After saving, copy the generated <span className="font-semibold">client_id</span> from the table below</li>
+            </ol>
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-blue-900 text-xs">
+              <span className="font-semibold">Note:</span> Your branding (logo, colors) will be displayed on the OIDC login page when users authenticate through your relying party.
+            </div>
+          </div>
+
+          {/* Step B - Discover Endpoints */}
+          <div>
+            <h3 className="text-base font-bold text-gray-900 mb-3">Step B — Discover Endpoints</h3>
+            <p className="text-gray-700 mb-2">
+              The OIDC discovery document is available at:
+            </p>
+            <a
+              href={`${issuerBaseUrl}/.well-known/openid-configuration`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-gray-50 border border-gray-300 rounded p-3 text-blue-600 hover:underline break-all"
+            >
+              {issuerBaseUrl}/.well-known/openid-configuration
+            </a>
+            <div className="mt-3 space-y-1 text-gray-700">
+              <p><span className="font-semibold">Authorization endpoint:</span> <code className="bg-gray-100 px-1 rounded">{issuerBaseUrl}/authorize</code></p>
+              <p><span className="font-semibold">Token endpoint:</span> <code className="bg-gray-100 px-1 rounded">{issuerBaseUrl}/token</code></p>
+            </div>
+          </div>
+
+          {/* Step C - Get Authorization Code */}
+          <div>
+            <h3 className="text-base font-bold text-gray-900 mb-3">Step C — Get an Authorization Code</h3>
+            <p className="text-gray-700 mb-3">
+              Test the authorization flow using{' '}
+              <a
+                href="https://oidcdebugger.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                oidcdebugger.com
+              </a>
+              . Fill the form like this:
+            </p>
+            
+            <div className="bg-gray-50 border border-gray-300 rounded p-4 space-y-3">
+              <div>
+                <span className="font-semibold text-gray-900">Authorize URI:</span>
+                <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-800 break-all">
+                  {issuerBaseUrl}/authorize
+                </div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Redirect URI:</span>
+                <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-800">
+                  https://oidcdebugger.com/debug
+                </div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Client ID:</span>
+                <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-600">
+                  &lt;YOUR_CLIENT_ID&gt;
+                </div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Scope:</span>
+                <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-800">
+                  openid
+                </div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Response Type:</span>
+                <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-800">
+                  ✓ code (only)
+                </div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">PKCE:</span>
+                <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-800">
+                  ✓ Use PKCE? → SHA-256
+                </div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Response mode:</span>
+                <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-800">
+                  form_post
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-900 text-xs">
+              <span className="font-semibold">Important:</span> Before pressing "Send Request", copy and save the generated <span className="font-semibold">Code Verifier</span> from oidcdebugger. You will need it for the token request.
+            </div>
+
+            <p className="mt-4 text-gray-700">
+              After clicking <span className="font-semibold">"Send Request"</span>, you'll be redirected to the nullProfile passkey login page.
+              After signing in with a passkey, oidcdebugger will display the returned authorization code.
+            </p>
+          </div>
+
+          {/* Step D - Exchange Code for Token */}
+          <div>
+            <h3 className="text-base font-bold text-gray-900 mb-3">Step D — Exchange Code for ID Token</h3>
+            <p className="text-gray-700 mb-3">
+              Use the following curl command to exchange the authorization code for an ID token:
+            </p>
+            <pre className="bg-slate-50 border border-gray-300 rounded p-3 overflow-x-auto text-xs leading-relaxed">
+{`curl -X POST "${issuerBaseUrl}/token" \\
+  -H "Content-Type: application/x-www-form-urlencoded" \\
+  -d "grant_type=authorization_code" \\
+  -d "client_id=<YOUR_CLIENT_ID>" \\
+  -d "code=<AUTHORIZATION_CODE_FROM_OIDCDEBUGGER>" \\
+  -d "redirect_uri=https://oidcdebugger.com/debug" \\
+  -d "code_verifier=<CODE_VERIFIER_FROM_OIDCDEBUGGER>"`}
+            </pre>
+            <p className="mt-3 text-gray-700 mb-2">
+              <span className="font-semibold">Example response:</span>
+            </p>
+            <pre className="bg-slate-50 border border-gray-300 rounded p-3 overflow-x-auto text-xs leading-relaxed">
+{`{
+  "id_token": "eyJraWQiOiI1MGI2YjllOC0wNWI1LTQ5NmYtOGU3NC1iOWRkMzE3ZmQ4OTMiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJzdWIiOiIySm44VmlLN3h2OVBnNXQ3ZkkyWHYzYmtOOEstMWY0bTV4enR4NUdyd0Z3IiwiYXVkIjoicnBfNTZhMGMzZWFlYWMzNDg3ODk4YjFkM2QyNjQ4NmI2NmQiLCJleHAiOjE3NzE5MTk4MzEsImlhdCI6MTc3MTkxNjIzMSwibm9uY2UiOiIxeWlnMHhqdXd3biJ9.MaTrVwV_Js8qhMdVM2bBCjack67UfZuiSnyds3GBQe8AzhJD_LH-Olx6YQTKZNAX7WOk4FSK3P5KKvMBxcBGCptcFehrSfb0rViQqEacCykzGjCMc7nMkwfBlLDYGb57yHMX4ryddhe34OHjagKrNLCWf9JzpDANTjNOeQsO1Ord4LbEkWjmHSRZO-er7ATb59LLFcjKuwVZE9L6OwUThKTwPOFbFeZ6U_5wQKf7JRgPGXLMklT0UA6FRWgikhwLxnpx17jOH0mxCnX2ZLQSn7YUKXoUSiJxeB-rDXLd-Fg9ydq_UzjPZxQtx_7cg37xUT91DI-EATgG0CvghpQ2Dg",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}`}
+            </pre>
+            <p className="mt-3 text-gray-700">
+              The response includes an <code className="bg-gray-100 px-1 rounded font-semibold">id_token</code> (JWT), token type, and expiration.
+            </p>
+          </div>
+
+          {/* Step E - Inspect Token */}
+          <div>
+            <h3 className="text-base font-bold text-gray-900 mb-3">Step E — Inspect the ID Token</h3>
+            <p className="text-gray-700 mb-2">
+              Copy the <code className="bg-gray-100 px-1 rounded">id_token</code> from the response and paste it into{' '}
+              <a
+                href="https://jwt.io/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                jwt.io
+              </a>{' '}
+              to view the claims.
+            </p>
+            <p className="text-gray-700">
+              nullProfile issues a <span className="font-semibold">pairwise subject identifier (sub)</span> plus standard OIDC fields (iss, aud, exp, iat, etc.).
+            </p>
+          </div>
+        </div>
+      </CollapsibleSection>
 
       {showForm && (
         <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
