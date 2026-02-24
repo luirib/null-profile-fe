@@ -6,12 +6,14 @@ export interface PasskeySummary {
 
 export interface RelyingPartySummary {
   id: string;
+  rpId: string;
   name: string;
   createdAt: string;
 }
 
 export interface RelyingPartyDetail {
   id: string;
+  rpId: string;
   name: string;
   sectorId?: string;
   redirectUris: string[];

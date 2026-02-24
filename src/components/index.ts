@@ -1,6 +1,7 @@
 export { Button } from './Button';
 export { Card } from './Card';
 export { BrandHeader } from './BrandHeader';
+export { CollapsibleSection } from './CollapsibleSection';
 export { ProtectedRoute } from './ProtectedRoute';
 export { TopBar } from './TopBar';
 export { Sidebar } from './Sidebar';
