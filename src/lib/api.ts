@@ -4,6 +4,7 @@ import type {
   RelyingPartyDetail,
   CreateRelyingPartyRequest,
   UpdateRelyingPartyRequest,
+  UsageSummary,
 } from '../types/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -270,5 +271,14 @@ export async function deleteRelyingParty(id: string): Promise<void> {
  */
 export async function deleteAccount(): Promise<void> {
   return apiDelete('/api/account');
+}
+
+/**
+ * Get usage summary for a specific RP or all RPs
+ * @param rpId - "ALL" for all RPs, or a specific RP UUID
+ * @param months - Number of months to retrieve (6, 12, or 24)
+ */
+export async function getUsageSummary(rpId: string, months: number): Promise<UsageSummary> {
+  return apiGet<UsageSummary>(`/api/usage/summary?rpId=${rpId}&months=${months}`);
 }
 

@@ -45,3 +45,11 @@ export interface UpdateRelyingPartyRequest {
   primaryColor?: string;
   secondaryColor?: string;
 }
+
+export interface UsageSummary {
+  months: string[];
+  mau: number[];
+  logins: number[];
+  retention?: number[];
+  activeRecently?: number[];
+}
