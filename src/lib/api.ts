@@ -5,6 +5,9 @@ import type {
   CreateRelyingPartyRequest,
   UpdateRelyingPartyRequest,
   UsageSummary,
+  DonationSummary,
+  CreateDonationCheckoutRequest,
+  CheckoutSessionResponse,
 } from '../types/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -280,5 +283,33 @@ export async function deleteAccount(): Promise<void> {
  */
 export async function getUsageSummary(rpId: string, months: number): Promise<UsageSummary> {
   return apiGet<UsageSummary>(`/api/usage/summary?rpId=${rpId}&months=${months}`);
+}
+
+// ============================================================================
+// Billing/Donations
+// ============================================================================
+
+/**
+ * Get donation summary for a user
+ * @param userId - User UUID to get donation summary for
+ */
+export async function getDonationSummary(userId: string): Promise<DonationSummary> {
+  return apiGet<DonationSummary>(`/api/billing/donations/summary?userId=${userId}`);
+}
+
+/**
+ * Create a Stripe Checkout session for a donation
+ * @param userId - User UUID making the donation
+ * @param amountMinor - Donation amount in minor units (cents)
+ */
+export async function createDonationCheckoutSession(
+  userId: string,
+  amountMinor: number
+): Promise<CheckoutSessionResponse> {
+  const request: CreateDonationCheckoutRequest = {
+    userId,
+    amount: amountMinor,
+  };
+  return apiPost<CheckoutSessionResponse>('/api/billing/donations/checkout-session', request);
 }
 

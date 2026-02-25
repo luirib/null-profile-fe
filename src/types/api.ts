@@ -53,3 +53,19 @@ export interface UsageSummary {
   retention?: number[];
   activeRecently?: number[];
 }
+
+export interface DonationSummary {
+  currency: string;
+  userTotalMinor: number;
+  projectTotalMinor: number;
+  supporterCount: number;
+}
+
+export interface CreateDonationCheckoutRequest {
+  userId: string;
+  amount: number; // minor units (cents)
+}
+
+export interface CheckoutSessionResponse {
+  url: string;
+}

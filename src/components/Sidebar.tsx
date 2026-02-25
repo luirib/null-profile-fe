@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Key, Shield, User, BarChart3 } from 'lucide-react';
+import { Key, Shield, User, BarChart3, Heart } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -27,6 +27,10 @@ export const Sidebar: React.FC = () => {
       <NavLink to="/dashboard/usage" className={linkClass}>
         <BarChart3 size={18} />
         Usage
+      </NavLink>
+      <NavLink to="/dashboard/support" className={linkClass}>
+        <Heart size={18} />
+        Support
       </NavLink>
     </div>
   );

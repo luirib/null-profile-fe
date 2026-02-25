@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage, OidcLoginPage, UsagePage } from './pages';
+import { LoginPage, OidcLoginPage, UsagePage, SupportPage, SupportSuccessPage, SupportCancelPage } from './pages';
 import { ProtectedRoute, DashboardLayout, ProfilePage, PasskeysPage, RelyingPartiesPage } from './components';
 
 function App() {
@@ -24,6 +24,9 @@ function App() {
           <Route path="passkeys" element={<PasskeysPage />} />
           <Route path="relying-parties" element={<RelyingPartiesPage />} />
           <Route path="usage" element={<UsagePage />} />
+          <Route path="support" element={<SupportPage />} />
+          <Route path="support/success" element={<SupportSuccessPage />} />
+          <Route path="support/cancel" element={<SupportCancelPage />} />
         </Route>
 
         {/* Default route - redirect to dashboard (ProtectedRoute will handle auth check) */}

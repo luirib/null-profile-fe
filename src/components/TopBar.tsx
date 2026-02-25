@@ -1,9 +1,11 @@
 import React from 'react';
-import { LogOut } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { LogOut, Heart } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../lib/api';
 
 export const TopBar: React.FC = () => {
+  const navigate = useNavigate();
+  
   const handleLogout = async () => {
     try {
       await logout();
@@ -21,13 +23,22 @@ export const TopBar: React.FC = () => {
       >
         nullProfile Dashboard
       </Link>
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-mono font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
-      >
-        <LogOut size={16} />
-        Logout
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate('/dashboard/support')}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-mono font-medium text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-all shadow-sm"
+        >
+          <Heart size={16} />
+          Donate
+        </button>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-mono font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
+      </div>
     </div>
   );
 };
