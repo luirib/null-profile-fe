@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Key, Shield, User } from 'lucide-react';
+import { Key, Shield, User, BarChart3 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -23,6 +23,10 @@ export const Sidebar: React.FC = () => {
       <NavLink to="/dashboard/relying-parties" className={linkClass}>
         <Shield size={18} />
         Relying Parties
+      </NavLink>
+      <NavLink to="/dashboard/usage" className={linkClass}>
+        <BarChart3 size={18} />
+        Usage
       </NavLink>
     </div>
   );

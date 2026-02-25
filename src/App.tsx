@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage, OidcLoginPage } from './pages';
+import { LoginPage, OidcLoginPage, UsagePage } from './pages';
 import { ProtectedRoute, DashboardLayout, ProfilePage, PasskeysPage, RelyingPartiesPage } from './components';
 
 function App() {
@@ -23,6 +23,7 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="passkeys" element={<PasskeysPage />} />
           <Route path="relying-parties" element={<RelyingPartiesPage />} />
+          <Route path="usage" element={<UsagePage />} />
         </Route>
 
         {/* Default route - redirect to dashboard (ProtectedRoute will handle auth check) */}
