@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Heart, AlertCircle, Loader2 } from 'lucide-react';
 import { getDonationSummary, createDonationCheckoutSession } from '../lib/api';
 import { useCurrentUser } from '../lib/useCurrentUser';
@@ -8,7 +9,9 @@ import type { DonationSummary } from '../types/api';
 const PRESET_AMOUNTS = [5, 10, 25, 50]; // In major units (euros/dollars)
 
 export const SupportPage: React.FC = () => {
-  const { userId } = useCurrentUser();
+  const { userId, isLoading: loadingUser } = useCurrentUser();
+  const location = useLocation();
+  const previousLocationRef = useRef(location.pathname);
   
   // Summary state
   const [summary, setSummary] = useState<DonationSummary | null>(null);
@@ -24,10 +27,42 @@ export const SupportPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   
-  // Load donation summary on mount
+  // Load donation summary on mount (only after userId is loaded)
   useEffect(() => {
-    loadDonationSummary();
-  }, [userId]);
+    if (!loadingUser && userId) {
+      loadDonationSummary();
+    }
+  }, [userId, loadingUser]);
+
+  // Reload donation summary when page becomes visible (e.g., returning from Stripe)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (!document.hidden && !loadingUser && userId) {
+        console.log('Page visible, reloading donation summary');
+        loadDonationSummary();
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [userId, loadingUser]);
+
+  // Reload donation summary when navigating back to this page
+  useEffect(() => {
+    const previousPath = previousLocationRef.current;
+    const currentPath = location.pathname;
+    
+    // If we're navigating TO /dashboard/support FROM a different page
+    if (currentPath === '/dashboard/support' && previousPath !== currentPath && !loadingUser && userId) {
+      console.log('Navigated back to support page, reloading donation summary');
+      loadDonationSummary();
+    }
+    
+    previousLocationRef.current = currentPath;
+  }, [location, userId, loadingUser]);
   
   async function loadDonationSummary() {
     try {
@@ -76,6 +111,15 @@ export const SupportPage: React.FC = () => {
     setCustomAmount(value);
     setUseCustom(true);
     setSubmitError(null);
+  }
+
+  // Show loading while fetching user authentication
+  if (loadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
   }
   
   return (

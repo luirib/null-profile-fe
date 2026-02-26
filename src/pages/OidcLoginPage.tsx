@@ -9,6 +9,7 @@ import {
   generateSuggestedPasskeyName,
 } from '../lib/webauthn';
 import { setAuthenticated } from '../lib/api';
+import { getReadableButtonTextColor } from '../lib/color';
 import type { RelyingPartyBranding } from '../types';
 
 type PageState = 'idle' | 'register' | 'authenticating' | 'registering';
@@ -18,8 +19,8 @@ function getOidcSubtitle(): string {
   return 'Sign in to continue';
 }
 
-function getOidcBannerText(rpName: string): string {
-  return `You're signing in to ${rpName}. Use an existing passkey to continue, or create a new one for your account.`;
+function getOidcBannerText(_rpName: string): string {
+  return `Use an existing passkey to continue, or create a new one for your account.`;
 }
 
 function isValidHexColor(color: string): boolean {
@@ -202,6 +203,10 @@ export const OidcLoginPage: React.FC = () => {
     ? branding.secondaryColor
     : '#6B7280'; // default gray-500
 
+  // Compute readable text colors based on background luminance
+  const primaryTextColor = getReadableButtonTextColor(primaryColor);
+  const secondaryTextColor = getReadableButtonTextColor(secondaryColor);
+
   const rpDisplayName = branding?.displayName || branding?.rpName || 'the application';
 
   return (
@@ -282,7 +287,7 @@ export const OidcLoginPage: React.FC = () => {
               <Button
                 type="submit"
                 variant="primary"
-                className="flex-1"
+                className={`flex-1 ${primaryTextColor === 'white' ? 'text-white' : 'text-black'}`}
                 disabled={state === 'registering'}
                 style={{
                   backgroundColor: primaryColor,
@@ -297,7 +302,7 @@ export const OidcLoginPage: React.FC = () => {
           <div className="space-y-4">
             <Button
               variant="primary"
-              className="w-full"
+              className={`w-full ${primaryTextColor === 'white' ? 'text-white' : 'text-black'}`}
               onClick={handleAuthenticate}
               disabled={state === 'authenticating'}
               style={{
@@ -319,11 +324,11 @@ export const OidcLoginPage: React.FC = () => {
 
             <Button
               variant="secondary"
-              className="w-full"
+              className={`w-full ${secondaryTextColor === 'white' ? 'text-white' : 'text-black'}`}
               onClick={handleShowRegisterMode}
               disabled={state === 'authenticating'}
               style={{
-                color: secondaryColor,
+                backgroundColor: secondaryColor,
                 borderColor: secondaryColor,
               }}
             >

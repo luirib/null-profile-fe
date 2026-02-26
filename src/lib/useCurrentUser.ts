@@ -1,57 +1,76 @@
 /**
- * Hook to get current authenticated user information
- * 
- * TODO: Wire this to actual authentication system
- * Currently returns a placeholder userId from sessionStorage or generated UUID
- * This should be replaced with actual user context from backend session/JWT
+ * Hook to get current authenticated user information from backend session
  */
 
 import { useEffect, useState } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 export interface CurrentUser {
   userId: string;
+  isLoading: boolean;
 }
 
 /**
- * Get or generate a user ID for the current session
- * This is a placeholder implementation until proper authentication is wired
- */
-function getUserId(): string {
-  // TEMPORARY: Use hardcoded user ID from your database for development/testing
-  // This matches the existing user in your users table
-  const TEST_USER_ID = '9d539de8-de71-4db4-a205-2d8f745e6d8a';
-  
-  // Try to get from sessionStorage first
-  let userId = sessionStorage.getItem('nullprofile_user_id');
-  
-  if (!userId) {
-    // Use actual database user ID instead of generating random UUID
-    // In production, this should come from backend authentication
-    userId = TEST_USER_ID;
-    sessionStorage.setItem('nullprofile_user_id', userId);
-    console.warn('TODO: useCurrentUser is using hardcoded test user ID. Wire to actual auth system.');
-  }
-  
-  return userId;
-}
-
-/**
- * Hook to access current user information
+ * Hook to access current authenticated user information
+ * Fetches from backend session endpoint
  * 
- * @returns Current user object with userId
+ * @returns Current user object with userId and loading state
  * 
  * @example
  * ```tsx
- * const { userId } = useCurrentUser();
+ * const { userId, isLoading } = useCurrentUser();
+ * if (isLoading) return <div>Loading...</div>;
  * ```
  */
 export function useCurrentUser(): CurrentUser {
-  const [userId] = useState<string>(getUserId);
+  const [userId, setUserId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
   useEffect(() => {
-    // Future: Subscribe to auth state changes
-    // For now, userId is stable for the session
+    let mounted = true;
+
+    async function fetchCurrentUser() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/session/current`, {
+          method: 'GET',
+          credentials: 'include', // Important: include session cookie
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Not authenticated - redirect to login
+            console.warn('User not authenticated, redirecting to login');
+            window.location.href = '/login';
+            return;
+          }
+          throw new Error(`Failed to fetch current user: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (mounted) {
+          setUserId(data.userId);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        if (mounted) {
+          // On error, redirect to login
+          window.location.href = '/login';
+        }
+      }
+    }
+
+    fetchCurrentUser();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
   
-  return { userId };
+  return { userId, isLoading };
 }
