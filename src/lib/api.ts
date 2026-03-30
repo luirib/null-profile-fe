@@ -15,6 +15,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080
 export interface ApiError {
   message: string;
   status?: number;
+  traceId?: string; // Correlation ID for debugging
 }
 
 /**
@@ -27,6 +28,11 @@ function handleUnauthorized() {
 
 /**
  * Base fetch wrapper with credentials and global error handling
+ * 
+ * Includes trace ID extraction for debugging production issues:
+ * - Reads X-Trace-Id from response headers
+ * - Includes trace ID in error objects
+ * - Logs trace ID to console for easy copy/paste
  */
 async function apiFetch<T>(
   endpoint: string,
@@ -44,18 +50,26 @@ async function apiFetch<T>(
       },
     });
 
+    // Extract trace ID from response headers for debugging
+    const traceId = response.headers.get('X-Trace-Id') || undefined;
+    if (traceId) {
+      console.log(`[API] Request trace ID: ${traceId} (${options?.method || 'GET'} ${endpoint})`);
+    }
+
     // Global 401/403 handling
     if (response.status === 401 || response.status === 403) {
       handleUnauthorized();
       throw {
         message: 'Unauthorized',
         status: response.status,
+        traceId,
       } as ApiError;
     }
 
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `HTTP ${response.status}`;
+      let errorTraceId = traceId;
       
       // Check for custom error message in header
       const headerErrorMessage = response.headers.get('X-Error-Message');
@@ -66,14 +80,22 @@ async function apiFetch<T>(
           const errorJson = JSON.parse(errorText);
           // Prioritize errorDescription (user message) over error (error code)
           errorMessage = errorJson.errorDescription || errorJson.message || errorJson.error || errorMessage;
+          // Extract trace ID from error body if present
+          if (errorJson.traceId) {
+            errorTraceId = errorJson.traceId;
+          }
         } catch {
           errorMessage = errorText || errorMessage;
         }
       }
       
+      // Log error with trace ID for debugging
+      console.error(`[API ERROR] ${errorMessage} (Trace ID: ${errorTraceId || 'unknown'})`);
+      
       const error: ApiError = {
         message: errorMessage,
         status: response.status,
+        traceId: errorTraceId,
       };
       throw error;
     }
@@ -91,9 +113,11 @@ async function apiFetch<T>(
     }
     
     // Network or other errors
+    console.error('[API ERROR] Network error:', error);
     throw {
       message: 'Network error. Please check your connection.',
       status: 0,
+      traceId: undefined,
     } as ApiError;
   }
 }

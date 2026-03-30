@@ -252,11 +252,22 @@ export function isWebAuthnAvailable(): boolean {
 
 /**
  * Get user-friendly error message for WebAuthn errors
+ * Includes trace ID for debugging production issues
  */
 export function getWebAuthnErrorMessage(error: unknown): string {
-  // Handle API errors (from backend)
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-    return error.message;
+  // Handle API errors (from backend) with trace ID
+  if (error && typeof error === 'object') {
+    const apiError = error as any;
+    
+    if ('traceId' in apiError && apiError.traceId) {
+      // Include trace ID in error message for user to report
+      const baseMessage = apiError.message || 'An error occurred';
+      return `${baseMessage}\n\nTrace ID: ${apiError.traceId}\n(Copy this ID when reporting issues)`;
+    }
+    
+    if ('message' in apiError && typeof apiError.message === 'string') {
+      return apiError.message;
+    }
   }
   
   // Handle browser WebAuthn errors
