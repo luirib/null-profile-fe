@@ -8,7 +8,7 @@ import {
   getWebAuthnErrorMessage,
   generateSuggestedPasskeyName,
 } from '../lib/webauthn';
-import { setAuthenticated } from '../lib/api';
+import { setAuthenticated, API_BASE_URL } from '../lib/api';
 import { getReadableButtonTextColor } from '../lib/color';
 import type { RelyingPartyBranding } from '../types';
 
@@ -53,13 +53,13 @@ export const OidcLoginPage: React.FC = () => {
     // Fetch branding for this transaction
     const fetchBranding = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/oidc/branding?txn=${txn}`, {
+        const response = await fetch(`${API_BASE_URL}/api/oidc/branding?txn=${txn}`, {
           credentials: 'include',
         });
         
         if (!response.ok) {
           console.warn('Failed to fetch branding, falling back to default login');
-          navigate('/login', { replace: true });
+          navigate(`/login?txn=${txn}`, { replace: true });
           return;
         }
 
@@ -67,7 +67,7 @@ export const OidcLoginPage: React.FC = () => {
         setBranding(brandingData);
       } catch (err) {
         console.error('Error fetching branding:', err);
-        navigate('/login', { replace: true });
+        navigate(`/login?txn=${txn}`, { replace: true });
       }
     };
 

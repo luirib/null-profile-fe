@@ -6,6 +6,7 @@ import {
   createRelyingParty,
   updateRelyingParty,
   deleteRelyingParty,
+  API_BASE_URL,
 } from '../lib/api';
 import type { RelyingPartySummary, CreateRelyingPartyRequest } from '../types/api';
 import { Button } from './Button';
@@ -177,9 +178,6 @@ export const RelyingPartiesPage: React.FC = () => {
     return <div className="font-mono text-gray-600">Loading relying parties...</div>;
   }
 
-  // Get issuer base URL from environment variable
-  const issuerBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -243,16 +241,16 @@ export const RelyingPartiesPage: React.FC = () => {
               The OIDC discovery document is available at:
             </p>
             <a
-              href={`${issuerBaseUrl}/.well-known/openid-configuration`}
+              href={`${API_BASE_URL}/.well-known/openid-configuration`}
               target="_blank"
               rel="noopener noreferrer"
               className="block bg-gray-50 border border-gray-300 rounded p-3 text-blue-600 hover:underline break-all"
             >
-              {issuerBaseUrl}/.well-known/openid-configuration
+              {API_BASE_URL}/.well-known/openid-configuration
             </a>
             <div className="mt-3 space-y-1 text-gray-700">
-              <p><span className="font-semibold">Authorization endpoint:</span> <code className="bg-gray-100 px-1 rounded">{issuerBaseUrl}/authorize</code></p>
-              <p><span className="font-semibold">Token endpoint:</span> <code className="bg-gray-100 px-1 rounded">{issuerBaseUrl}/token</code></p>
+              <p><span className="font-semibold">Authorization endpoint:</span> <code className="bg-gray-100 px-1 rounded">{API_BASE_URL}/authorize</code></p>
+              <p><span className="font-semibold">Token endpoint:</span> <code className="bg-gray-100 px-1 rounded">{API_BASE_URL}/token</code></p>
             </div>
           </div>
 
@@ -276,7 +274,7 @@ export const RelyingPartiesPage: React.FC = () => {
               <div>
                 <span className="font-semibold text-gray-900">Authorize URI:</span>
                 <div className="bg-white border border-gray-200 rounded p-2 mt-1 text-gray-800 break-all">
-                  {issuerBaseUrl}/authorize
+                  {API_BASE_URL}/authorize
                 </div>
               </div>
               <div>
@@ -334,7 +332,7 @@ export const RelyingPartiesPage: React.FC = () => {
               Use the following curl command to exchange the authorization code for an ID token:
             </p>
             <pre className="bg-slate-50 border border-gray-300 rounded p-3 overflow-x-auto text-xs leading-relaxed">
-{`curl -X POST "${issuerBaseUrl}/token" \\
+{`curl -X POST "${API_BASE_URL}/token" \\
   -H "Content-Type: application/x-www-form-urlencoded" \\
   -d "grant_type=authorization_code" \\
   -d "client_id=<YOUR_CLIENT_ID>" \\

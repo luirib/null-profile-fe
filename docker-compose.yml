@@ -5,9 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
     container_name: nullprofile-frontend
-    environment:
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8080}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
